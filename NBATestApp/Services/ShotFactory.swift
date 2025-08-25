@@ -238,7 +238,7 @@ struct ShotFactory {
             startXRange: -6.0...6.0,  // Increased range for better visibility
             startZRange: (-4.0)...(-1.0),  // Moved shots further back for better arc visibility
             apexYRange: 6.0...8.0,     // Increased apex height for more dramatic arc
-            successRate: 0.5
+            successRate: 0.5  // Balanced 50/50 split between made and missed shots
         )
     }
     
@@ -270,14 +270,79 @@ struct ShotFactory {
             let startZ = Float.random(in: configuration.startZRange)
             let apexY = Float.random(in: configuration.apexYRange)
             
-            // Determine if shot was made based on success rate
-            let made = Float.random(in: 0...1) < configuration.successRate
+            // Calculate distance from start to rim for more realistic success rate
+            let startPos = SCNVector3(startX, 1.0, startZ)
+            let distance = MathUtils.distance(from: startPos, to: configuration.rimPosition)
+            
+            // Adjust success rate based on distance - closer shots are more likely to succeed
+            let baseSuccessRate = configuration.successRate
+            let distanceFactor = max(0.2, 1.0 - (distance / 15.0))  // Closer shots get higher success rate
+            let adjustedSuccessRate = baseSuccessRate * distanceFactor
+            
+            // Add some intentional variety for demonstration
+            let shotVariety = index % 4  // Create different shot patterns
+            var finalSuccessRate = adjustedSuccessRate
+            
+            switch shotVariety {
+            case 0: // Normal shot - no change
+                break
+            case 1: // High arc shot (slightly more likely to miss)
+                finalSuccessRate *= 0.95  // Only 5% penalty
+            case 2: // Side shot (slightly more likely to miss)
+                finalSuccessRate *= 0.9   // Only 10% penalty
+            case 3: // Long distance shot (slightly more likely to miss)
+                finalSuccessRate *= 0.85  // Only 15% penalty
+            default:
+                break
+            }
+            
+            // Ensure we don't go below a minimum success rate
+            finalSuccessRate = max(0.2, finalSuccessRate)
+            
+            // Determine if shot was made based on adjusted success rate
+            let made = Float.random(in: 0...1) < finalSuccessRate
+            
+            // For missed shots, adjust the end position to actually miss the ring
+            var endPosition = configuration.rimPosition
+            if !made {
+                // Create different types of misses
+                switch shotVariety {
+                case 0: // Normal miss - slightly off target
+                    let missOffset = Float.random(in: -1.0...1.0)
+                    endPosition = SCNVector3(
+                        configuration.rimPosition.x + missOffset,
+                        configuration.rimPosition.y + Float.random(in: 0.5...1.5), // Too high
+                        configuration.rimPosition.z + Float.random(in: -0.5...0.5)
+                    )
+                case 1: // High arc miss - way too high
+                    endPosition = SCNVector3(
+                        configuration.rimPosition.x + Float.random(in: -0.8...0.8),
+                        configuration.rimPosition.y + Float.random(in: 2.0...3.0), // Much too high
+                        configuration.rimPosition.z + Float.random(in: -0.3...0.3)
+                    )
+                case 2: // Side miss - way off to the side
+                    let sideOffset = Float.random(in: 2.0...3.0) * (Float.random(in: 0...1) > 0.5 ? 1 : -1)
+                    endPosition = SCNVector3(
+                        configuration.rimPosition.x + sideOffset, // Way off to the side
+                        configuration.rimPosition.y + Float.random(in: 0.2...0.8),
+                        configuration.rimPosition.z + Float.random(in: -0.5...0.5)
+                    )
+                case 3: // Long distance miss - too far
+                    endPosition = SCNVector3(
+                        configuration.rimPosition.x + Float.random(in: -1.0...1.0),
+                        configuration.rimPosition.y + Float.random(in: 0.3...1.0),
+                        configuration.rimPosition.z - Float.random(in: 1.0...2.0) // Too far past the rim
+                    )
+                default:
+                    break
+                }
+            }
             
             return ShotSpec(
                 playerUID: player.uid,
                 playerName: player.personName.name,
-                start: SCNVector3(startX, 1.0, startZ),
-                rim: configuration.rimPosition,
+                start: startPos,
+                rim: endPosition, // Use adjusted end position for missed shots
                 made: made,
                 apexY: apexY,
                 metadata: [:]

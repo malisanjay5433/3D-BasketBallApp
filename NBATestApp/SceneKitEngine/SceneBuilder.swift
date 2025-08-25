@@ -103,44 +103,68 @@ final class SceneBuilder {
     
     private static func setupBasket(in scene: SCNScene) {
         // Rim
-        let rim = SCNTorus(ringRadius: CGFloat(GameConstants.Basket.rimRadius), 
-                          pipeRadius: CGFloat(GameConstants.Basket.rimPipeRadius))
-        rim.firstMaterial?.diffuse.contents = UIColor.orange
+        let rimGeometry = SCNTorus(ringRadius: CGFloat(GameConstants.Basket.rimRadius), 
+                                  pipeRadius: CGFloat(GameConstants.Basket.rimPipeRadius))
+        let rimMaterial = SCNMaterial()
+        rimMaterial.diffuse.contents = UIColor.black  // Changed to black as requested
+        rimMaterial.emission.contents = UIColor.black
+        rimMaterial.emission.intensity = 0.0  // No emission for black rim
+        rimGeometry.materials = [rimMaterial]
         
-        let rimNode = SCNNode(geometry: rim)
+        let rimNode = SCNNode(geometry: rimGeometry)
         rimNode.position = GameConstants.Basket.position
-        scene.rootNode.addChildNode(rimNode)
+        rimNode.name = "rim"
         
         // Backboard
-        let backboard = SCNBox(width: CGFloat(GameConstants.Basket.backboardWidth), 
-                              height: CGFloat(GameConstants.Basket.backboardHeight), 
-                              length: CGFloat(GameConstants.Basket.backboardDepth), 
-                              chamferRadius: 0)
-        backboard.firstMaterial?.diffuse.contents = UIColor.white
+        let backboardGeometry = SCNBox(width: CGFloat(GameConstants.Basket.backboardWidth), 
+                                     height: CGFloat(GameConstants.Basket.backboardHeight), 
+                                     length: CGFloat(GameConstants.Basket.backboardDepth),
+                                     chamferRadius: 0.0)
+        let backboardMaterial = SCNMaterial()
+        backboardMaterial.diffuse.contents = UIColor.white
+        backboardMaterial.roughness.contents = 0.8
+        backboardGeometry.materials = [backboardMaterial]
         
-        let backboardNode = SCNNode(geometry: backboard)
-        backboardNode.position = SCNVector3(0, 3.5, -8.4)
-        scene.rootNode.addChildNode(backboardNode)
+        let backboardNode = SCNNode(geometry: backboardGeometry)
+        backboardNode.position = SCNVector3(GameConstants.Basket.position.x, 
+                                          GameConstants.Basket.position.y + 0.5, 
+                                          GameConstants.Basket.position.z + 0.1)
+        backboardNode.name = "backboard"
         
         // Pole
-        let pole = SCNCylinder(radius: CGFloat(GameConstants.Basket.poleRadius), 
-                              height: CGFloat(GameConstants.Basket.poleHeight))
-        pole.firstMaterial?.diffuse.contents = UIColor.white
+        let poleGeometry = SCNCylinder(radius: CGFloat(GameConstants.Basket.poleRadius), 
+                                     height: CGFloat(GameConstants.Basket.poleHeight))
+        let poleMaterial = SCNMaterial()
+        poleMaterial.diffuse.contents = UIColor.white  // Changed to white as requested
+        poleMaterial.roughness.contents = 0.6
+        poleGeometry.materials = [poleMaterial]
         
-        let poleNode = SCNNode(geometry: pole)
-        poleNode.position = SCNVector3(0, 1.5, -8)
+        let poleNode = SCNNode(geometry: poleGeometry)
+        poleNode.position = SCNVector3(GameConstants.Basket.position.x, 
+                                      GameConstants.Basket.position.y - 1.5, 
+                                      GameConstants.Basket.position.z)
+        poleNode.name = "pole"
+        
+        // Base
+        let baseGeometry = SCNBox(width: CGFloat(GameConstants.Basket.basePaddingWidth), 
+                                height: CGFloat(GameConstants.Basket.basePaddingHeight), 
+                                length: CGFloat(GameConstants.Basket.basePaddingDepth),
+                                chamferRadius: 0.0)
+        let baseMaterial = SCNMaterial()
+        baseMaterial.diffuse.contents = UIColor.white  // Changed to white to match pole
+        baseMaterial.roughness.contents = 0.7
+        baseGeometry.materials = [baseMaterial]
+        
+        let baseNode = SCNNode(geometry: baseGeometry)
+        baseNode.position = SCNVector3(GameConstants.Basket.position.x, 
+                                      GameConstants.Basket.position.y - 2.5, 
+                                      GameConstants.Basket.position.z)
+        baseNode.name = "base"
+        
+        scene.rootNode.addChildNode(rimNode)
+        scene.rootNode.addChildNode(backboardNode)
         scene.rootNode.addChildNode(poleNode)
-        
-        // Pole base padding
-        let padding = SCNBox(width: CGFloat(GameConstants.Basket.basePaddingWidth), 
-                            height: CGFloat(GameConstants.Basket.basePaddingHeight), 
-                            length: CGFloat(GameConstants.Basket.basePaddingDepth), 
-                            chamferRadius: 0)
-        padding.firstMaterial?.diffuse.contents = UIColor.white
-        
-        let paddingNode = SCNNode(geometry: padding)
-        paddingNode.position = SCNVector3(0, 0.25, -8)
-        scene.rootNode.addChildNode(paddingNode)
+        scene.rootNode.addChildNode(baseNode)
     }
     
     private static func setupAudience(in scene: SCNScene) {

@@ -77,14 +77,19 @@ final class SceneController: ObservableObject {
     
     /// Stops all current animations and resets the scene
     func stopAll() {
+        print("🎯 SceneController: Stopping all animations and cleaning up scene")
         cleanupAnimationNodes()
         isPlaying = false
         isAnimating = false
+        shotsQueue.removeAll()
+        print("🎯 SceneController: Scene cleaned up and ready for new shots")
     }
     
     /// Plays all shots in sequence
     func play(shots: [ShotSpec], players: [String: Player]) {
         print("🎯 SceneController.play called with \(shots.count) shots and \(players.count) players")
+        // Always clean up before starting new shots
+        stopAll()
         loadShots(shots)
         print("🎯 Shots loaded into queue. Queue size: \(shotsQueue.count)")
         playNext(from: players)
@@ -92,6 +97,7 @@ final class SceneController: ObservableObject {
     
     /// Replays all shots from the beginning
     func replay(shots: [ShotSpec], players: [String: Player]) {
+        print("🎯 SceneController: Replaying shots")
         stopAll()
         loadShots(shots)
         playNext(from: players)
@@ -100,8 +106,33 @@ final class SceneController: ObservableObject {
     // MARK: - Private Methods
     
     private func cleanupAnimationNodes() {
-        scene.rootNode.childNodes
-            .filter { ["ball", "crumb", "effect"].contains($0.name) }
-            .forEach { $0.removeFromParentNode() }
+        print("🎯 SceneController: Cleaning up animation nodes")
+        
+        // Remove all nodes that are part of shot animations
+        let nodesToRemove = scene.rootNode.childNodes.filter { node in
+            // Check for various naming patterns used by ShotAnimationService
+            let nodeName = node.name ?? ""
+            return nodeName.contains("ball") ||
+                   nodeName.contains("crumb") ||
+                   nodeName.contains("effect") ||
+                   nodeName.contains("ring") ||
+                   nodeName.contains("miss") ||
+                   nodeName.contains("shot") ||
+                   nodeName.contains("trajectory") ||
+                   // Also check for nodes without names that might be animation nodes
+                   (nodeName.isEmpty && node.geometry != nil)
+        }
+        
+        print("🎯 SceneController: Found \(nodesToRemove.count) animation nodes to remove")
+        
+        nodesToRemove.forEach { node in
+            print("🎯 SceneController: Removing node: \(node.name ?? "unnamed")")
+            node.removeFromParentNode()
+        }
+        
+        // Also stop any running actions on the scene
+        scene.rootNode.removeAllActions()
+        
+        print("🎯 SceneController: Animation cleanup completed")
     }
 }

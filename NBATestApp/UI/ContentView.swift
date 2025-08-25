@@ -32,41 +32,7 @@ struct ContentView: View {
                         selection: $gameViewModel.teamChoice,
                         items: gameViewModel.availableTeams
                     )
-                    
                     Spacer()
-                    
-                    // Debug Test Button
-                    Button(action: {
-                        print("🎯 Debug test button pressed")
-                        // Create a simple test shot
-                        let testShot = ShotSpec(
-                            playerUID: "debug",
-                            playerName: "Debug Player",
-                            start: SCNVector3(2, 1, -3),
-                            rim: SCNVector3(0, 3.05, -8),
-                            made: true,
-                            apexY: 5.0
-                        )
-                        
-                        // Immediately animate this test shot
-                        sceneController.stopAll()
-                        sceneController.play(shots: [testShot], players: ["debug": Player(
-                            uid: "debug",
-                            playerId: nil,
-                            teamName: nil,
-                            teamAbbreviation: nil,
-                            jerseyNumber: nil,
-                            personName: PersonName(name: "Debug", firstName: nil, lastName: nil),
-                            images: nil
-                        )])
-                        print("🎯 Debug test shot started")
-                    }) {
-                        Text("Test Ball")
-                            .font(.caption)
-                            .foregroundColor(.white)
-                            .padding(8)
-                            .background(Color.red.opacity(0.8), in: RoundedRectangle(cornerRadius: 8))
-                    }
                 }
                 .padding()
                 

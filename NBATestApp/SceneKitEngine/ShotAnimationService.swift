@@ -86,38 +86,27 @@ final class ShotAnimationService {
         return ball
     }
     
+    /// Creates breadcrumb trail nodes for the shot
     private func createBreadcrumbs(for shot: ShotSpec, start: SCNVector3, end: SCNVector3) -> [SCNNode] {
+        let breadcrumbCount = GameConstants.Ball.breadcrumbCount
         var breadcrumbs: [SCNNode] = []
         
-        for _ in 0..<GameConstants.Ball.breadcrumbCount {
-            // Create small cylinders instead of spheres for dashed line effect
-            let crumbGeometry = SCNCylinder(radius: CGFloat(GameConstants.Ball.breadcrumbRadius), 
-                                          height: CGFloat(GameConstants.Ball.breadcrumbRadius * 0.3))
+        // Use actuallyMade for more accurate color coding
+        let actuallyMade = shot.actuallyMade
+        let breadcrumbColor: UIColor = actuallyMade ? .systemGreen : .systemRed
+        
+        for i in 0..<breadcrumbCount {
+            let breadcrumb = SCNNode(geometry: SCNSphere(radius: CGFloat(GameConstants.Ball.breadcrumbRadius)))
+            breadcrumb.position = start
             
-            // Create different colored breadcrumbs based on shot result
-            let crumbMaterial = SCNMaterial()
-            if shot.made {
-                crumbMaterial.diffuse.contents = UIColor.systemGreen
-                crumbMaterial.emission.contents = UIColor.systemGreen
-                crumbMaterial.emission.intensity = 0.8  // Increased emission
-            } else {
-                crumbMaterial.diffuse.contents = UIColor.systemRed
-                crumbMaterial.emission.contents = UIColor.systemRed
-                crumbMaterial.emission.intensity = 0.8  // Increased emission
-            }
+            // Create material with appropriate color and emission
+            let material = SCNMaterial()
+            material.diffuse.contents = breadcrumbColor
+            material.emission.contents = breadcrumbColor
+            material.emission.intensity = 0.6  // Increased emission for better visibility
+            material.lightingModel = .physicallyBased
             
-            // Make breadcrumbs more visible
-            crumbMaterial.lightingModel = .physicallyBased
-            crumbMaterial.roughness.contents = 0.1
-            crumbMaterial.metalness.contents = 0.9
-            
-            crumbGeometry.materials = [crumbMaterial]
-            
-            let breadcrumb = SCNNode(geometry: crumbGeometry)
-            breadcrumb.name = "crumb"
-            breadcrumb.isHidden = true
-            breadcrumb.opacity = 0.0  // Start invisible
-            
+            breadcrumb.geometry?.materials = [material]
             breadcrumbs.append(breadcrumb)
         }
         
@@ -165,7 +154,11 @@ final class ShotAnimationService {
         // Show made/miss effect
         let effectAction = SCNAction.run { _ in
             print("🎯 Shot completed, showing effect")
-            if shot.made {
+            // Use actuallyMade for more accurate detection
+            let actuallyMade = shot.actuallyMade
+            print("🎯 Shot marked as made: \(shot.made), but actually made: \(actuallyMade)")
+            
+            if actuallyMade {
                 self.addMadeRing(at: end, in: scene)
             } else {
                 self.addMissX(at: end, in: scene)
