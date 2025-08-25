@@ -10,6 +10,7 @@ import SwiftUI
 
 struct PlaybackControls: View {
     @ObservedObject var controller: SceneController
+    @ObservedObject var gameViewModel: GameViewModel
     let shots: [ShotSpec]
     let playersMap: [String: Player]
     
@@ -26,7 +27,16 @@ struct PlaybackControls: View {
             }
             
             Button(action: {
-                controller.play(shots: shots, players: playersMap)
+                // If shots exist, just replay them. Otherwise load new shots
+                if !shots.isEmpty {
+                    controller.stopAll()
+                    controller.play(shots: shots, players: playersMap)
+                } else {
+                    // Load shots from JSON first
+                    Task {
+                        await gameViewModel.loadShotsForPlayback()
+                    }
+                }
             }) {
                 Image(systemName: "play.fill")
                     .font(.title2)

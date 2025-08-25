@@ -13,8 +13,10 @@ final class ShotAnimationService {
     // MARK: - Public Methods
     
     func animateShot(_ shot: ShotSpec, in scene: SCNScene, completion: @escaping () -> Void) {
+        print("🎯 ShotAnimationService.animateShot called for \(shot.playerName)")
         let start = SCNVector3(shot.start.x, shot.start.y, shot.start.z)
         let end = SCNVector3(shot.rim.x, shot.rim.y, shot.rim.z)
+        print("🎯 Start position: \(start), End position: \(end)")
         
         // Create and setup ball
         let ball = createBall(at: start)

@@ -7,6 +7,8 @@
 
 import Foundation
 import SwiftUI
+import Combine
+import SceneKit
 
 @MainActor
 final class GameViewModel: ObservableObject {
@@ -20,54 +22,67 @@ final class GameViewModel: ObservableObject {
     // MARK: - Private Properties
     private let playerDataService = PlayerDataService()
     private let shotFactory = ShotFactory()
+    private let sceneKitEngine = SceneKitEngine()
+    private let sceneController = SceneController()
+    private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Computed Properties
+    
     var availableTeams: [String] {
-        GameConstants.Teams.teamNames
+        return GameConstants.Teams.teamNames
     }
     
     var selectedTeam: String {
-        availableTeams[teamChoice]
+        return availableTeams[teamChoice]
+    }
+    
+    // MARK: - Initialization
+    
+    init() {
+        setupBindings()
     }
     
     // MARK: - Public Methods
     
-    /// Loads team data and prepares shots for the selected team
+    /// Loads team data and prepares shots
     func loadTeamAndPrepareShots() async {
         isLoading = true
         
-        do {
-            let players = await loadPlayersForSelectedTeam()
-			let newShots = ShotFactory.makeDemoShots(for: players)
+        let fileName = GameConstants.Teams.teamFileNames[teamChoice]
+        let players = playerDataService.loadPlayers(from: fileName)
+        
+        await MainActor.run {
+            self.playersMap = Dictionary(uniqueKeysWithValues: players.map { ($0.uid, $0) })
             
-            // Small delay for smooth transition
-            try await Task.sleep(nanoseconds: UInt64(GameConstants.UI.loadingDelay * 1_000_000_000))
+            // Generate demo shots for the loaded players
+            let newShots = ShotFactory.makeDemoShots(for: players)
+            print("🎯 Generated \(newShots.count) demo shots")
+            self.shots = newShots
             
-            await MainActor.run {
-                self.playersMap = Dictionary(uniqueKeysWithValues: players.map { ($0.uid, $0) })
-                self.shots = newShots
-                self.isLoading = false
-            }
-        } catch {
-            print("❌ Error loading team data: \(error)")
-            await MainActor.run {
-                self.isLoading = false
-            }
+            self.isLoading = false
         }
     }
     
-    /// Changes the selected team and reloads data
-    func changeTeam(to newTeamIndex: Int) {
-        teamChoice = newTeamIndex
-        Task {
-            await loadTeamAndPrepareShots()
-        }
+    /// Manually loads shots for the current team (called by play button)
+    func loadShotsForPlayback() async {
+        await loadTeamAndPrepareShots()
+    }
+    
+    /// Gets the current scene for rendering
+    func getScene() -> SCNScene {
+        return sceneController.scene
     }
     
     // MARK: - Private Methods
     
-    private func loadPlayersForSelectedTeam() async -> [Player] {
-        let fileName = teamChoice == 0 ? GameConstants.Teams.pacers : GameConstants.Teams.nets
-        return playerDataService.loadPlayers(from: fileName)
+    private func setupBindings() {
+        // Monitor team changes
+        $teamChoice
+            .sink { [weak self] _ in
+                Task {
+                    await self?.loadTeamAndPrepareShots()
+                }
+            }
+            .store(in: &cancellables)
     }
 }

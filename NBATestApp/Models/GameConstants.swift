@@ -104,6 +104,7 @@ enum GameConstants {
         static let nets = "Players_Nets_1610612751"
         
         static let teamNames = ["Pacers", "Nets"]
+        static let teamFileNames = ["Players_Pacers_1610612754", "Players_Nets_1610612751"]
         static let defaultTeamIndex = 0
     }
     

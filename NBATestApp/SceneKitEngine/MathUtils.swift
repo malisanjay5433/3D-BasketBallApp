@@ -10,7 +10,7 @@ import SceneKit
 
 enum MathUtils {
     
-    /// Calculates a point along a quadratic Bézier curve
+    /// Calculates a point along a quadratic Bézier curve for realistic basketball shots
     /// - Parameters:
     ///   - t: Interpolation parameter (0.0 to 1.0)
     ///   - start: Starting point of the curve
@@ -18,15 +18,19 @@ enum MathUtils {
     ///   - apexY: Maximum height (apex) of the curve
     /// - Returns: Point along the curve at parameter t
     static func bezierPoint(t: Float, start: SCNVector3, end: SCNVector3, apexY: Float) -> SCNVector3 {
-        let cx = (start.x + end.x) * 0.5
-        let cz = (start.z + end.z) * 0.5
-        let cy = apexY
+        // Calculate control point for realistic arc
+        let midX = (start.x + end.x) * 0.5
+        let midZ = (start.z + end.z) * 0.5
         
+        // Control point should be above the midpoint between start and end
+        let controlPoint = SCNVector3(midX, apexY, midZ)
+        
+        // Quadratic Bézier curve calculation
         let u = 1 - t
         
-        let x = u*u*start.x + 2*u*t*cx + t*t*end.x
-        let y = u*u*start.y + 2*u*t*cy + t*t*end.y
-        let z = u*u*start.z + 2*u*t*cz + t*t*end.z
+        let x = u*u*start.x + 2*u*t*controlPoint.x + t*t*end.x
+        let y = u*u*start.y + 2*u*t*controlPoint.y + t*t*end.y
+        let z = u*u*start.z + 2*u*t*controlPoint.z + t*t*end.z
         
         return SCNVector3(x, y, z)
     }

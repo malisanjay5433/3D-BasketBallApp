@@ -38,7 +38,7 @@ struct PlayerOverlayView: View {
         }
         .padding()
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: GameConstants.UI.playerOverlayCornerRadius))
-        .padding(.horizontal, GameConstants.UI.playerOverlayHorizontalPadding)
+//        .padding(.horizontal, GameConstants.UI.playerOverlayHorizontalPadding)
         .padding(.bottom, GameConstants.UI.playerOverlayBottomPadding)
     }
 }

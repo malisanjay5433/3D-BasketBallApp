@@ -17,17 +17,46 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             // 3D Scene
-            SceneView(scene: sceneController.scene,
+            SceneView(scene: gameViewModel.getScene(),
                      pointOfView: nil,
                      options: [.allowsCameraControl, .autoenablesDefaultLighting])
             .ignoresSafeArea()
+            .transition(.opacity.combined(with: .scale))
+            .animation(.easeInOut(duration: 1.0), value: true)
             
-            // Team Selection
+            // Top Controls - Only Team Selection
             VStack {
-                ArenaSegmentedControl(
-                    selection: $gameViewModel.teamChoice,
-                    items: gameViewModel.availableTeams
-                )
+                HStack {
+                    // Team Selection
+                    ArenaSegmentedControl(
+                        selection: $gameViewModel.teamChoice,
+                        items: gameViewModel.availableTeams
+                    )
+                    
+                    Spacer()
+                    
+                    // Simple Test Shot Button
+                    Button(action: {
+                        // Create a test shot
+                        let testShot = ShotSpec(
+                            playerUID: "test",
+                            playerName: "Test Player",
+                            start: SCNVector3(5, 1, -2),
+                            rim: SCNVector3(0, 3.05, -8),
+                            made: true,
+                            apexY: 6.0
+                        )
+                        gameViewModel.shots.append(testShot)
+                    }) {
+                        Image(systemName: "basketball.fill")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                            .padding(8)
+                            .background(Color.orange.opacity(0.8), in: Circle())
+                    }
+                }
+                .padding()
+                
                 Spacer()
             }
             
@@ -41,6 +70,7 @@ struct ContentView: View {
                 Spacer()
                 PlaybackControls(
                     controller: sceneController,
+                    gameViewModel: gameViewModel,
                     shots: gameViewModel.shots,
                     playersMap: gameViewModel.playersMap
                 )
@@ -52,25 +82,21 @@ struct ContentView: View {
                 Group {
                     if let currentPlayer = sceneController.currentPlayer {
                         PlayerOverlayView(player: currentPlayer)
-                            .padding(.bottom, 20)
+                            .padding(.bottom, 75)
                     }
                 },
                 alignment: .bottom
             )
         }
-        .onAppear {
-            Task {
-                await gameViewModel.loadTeamAndPrepareShots()
-            }
-        }
-        .onChange(of: gameViewModel.teamChoice) { _, _ in
-            Task {
-                await gameViewModel.loadTeamAndPrepareShots()
-            }
-        }
         .onChange(of: gameViewModel.shots) { _, newShots in
+            print("🎯 ContentView: Shots changed to \(newShots.count) shots")
             sceneController.stopAll()
             sceneController.loadShots(newShots)
+            // Auto-play shots when they're loaded
+            if !newShots.isEmpty {
+                print("🎯 ContentView: Auto-playing \(newShots.count) shots")
+                sceneController.play(shots: newShots, players: gameViewModel.playersMap)
+            }
         }
     }
 }

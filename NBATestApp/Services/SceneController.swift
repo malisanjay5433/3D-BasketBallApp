@@ -29,18 +29,35 @@ final class SceneController: ObservableObject {
     
     /// Loads shots into the queue for playback
     func loadShots(_ shots: [ShotSpec]) {
+        print("🎯 Loading \(shots.count) shots into queue")
         shotsQueue = shots
+        print("🎯 Queue now contains \(shotsQueue.count) shots")
     }
     
     /// Plays the next shot in the queue
     func playNext(from playersMap: [String: Player]) {
-        guard !isAnimating, !shotsQueue.isEmpty else { return }
+        print("🎯 playNext called. isAnimating: \(isAnimating), queue size: \(shotsQueue.count)")
+        guard !isAnimating, !shotsQueue.isEmpty else { 
+            print("🎯 playNext guard failed - isAnimating: \(isAnimating), queue empty: \(shotsQueue.isEmpty)")
+            return 
+        }
         
         isAnimating = true
         isPlaying = true
         
         let shot = shotsQueue.removeFirst()
-        currentPlayer = playersMap[shot.playerUID]
+        // Handle case where player might not be in the map
+        currentPlayer = playersMap[shot.playerUID] ?? Player(
+            uid: shot.playerUID,
+            playerId: nil,
+            teamName: nil,
+            teamAbbreviation: nil,
+            jerseyNumber: nil,
+            personName: PersonName(name: shot.playerName, firstName: nil, lastName: nil),
+            images: nil
+        )
+        
+        print("🏀 Starting shot animation for: \(shot.playerName)")
         
         animationService.animateShot(shot, in: scene) { [weak self] in
             guard let self = self else { return }
@@ -67,7 +84,9 @@ final class SceneController: ObservableObject {
     
     /// Plays all shots in sequence
     func play(shots: [ShotSpec], players: [String: Player]) {
+        print("🎯 SceneController.play called with \(shots.count) shots and \(players.count) players")
         loadShots(shots)
+        print("🎯 Shots loaded into queue. Queue size: \(shotsQueue.count)")
         playNext(from: players)
     }
     
