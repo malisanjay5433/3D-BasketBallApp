@@ -3,6 +3,18 @@
 ## Overview
 This NBA basketball visualization app has been restructured to follow clean architecture principles, improving maintainability, testability, and code organization.
 
+
+## Overview UI/UX
+
+### 🏗️ **Glimps**
+<img width="300" height="2796" alt="Simulator Screenshot - iPhone 16 Plus - 2025-08-25 at 18 26 56" src="https://github.com/user-attachments/assets/d5d4c440-c343-419e-8ac6-e283b5dd1390" />
+<img width="300" height="2796" alt="Simulator Screenshot - iPhone 16 Plus - 2025-08-25 at 18 31 56" src="https://github.com/user-attachments/assets/e787ca84-6403-49d2-a90a-3a15634c36b0" />
+<img width="300" height="2796" alt="Simulator Screenshot - iPhone 16 Plus - 2025-08-25 at 18 26 52" src="https://github.com/user-attachments/assets/252ed35a-b299-4e27-8c84-aa950f720574" />
+<img width="300" height="2796" alt="Simulator Screenshot - iPhone 16 Plus - 2025-08-25 at 18 26 48" src="https://github.com/user-attachments/assets/8a112382-27cd-48c9-b0f1-e90d93780d13" />
+<img width="300" height="2796" alt="Simulator Screenshot - iPhone 16 Plus - 2025-08-25 at 18 16 44" src="https://github.com/user-attachments/assets/61264003-4c2c-4df9-b7be-000191d92215" />
+<img width="300" height="2796" alt="Simulator Screenshot - iPhone 16 Plus - 2025-08-25 at 18 16 41" src="https://github.com/user-attachments/assets/5563a75b-6501-4de5-9019-9e9cce637791" />
+
+
 ## Architecture Overview
 
 ### 🏗️ **Clean Architecture Layers**
@@ -59,7 +71,6 @@ NBATestApp/
     ├── crowd.jpg                    # Audience backdrop
     └── Player JSON files            # Team player data
 ```
-
 ## 🔧 **Key Components**
 
 ### **Models Layer**
