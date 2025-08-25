@@ -1,242 +1,206 @@
 # NBA Test App - Clean Architecture
 
-This iOS app demonstrates NBA player visualization using SceneKit with a scalable Clean Architecture implementation.
+## Overview
+This NBA basketball visualization app has been restructured to follow clean architecture principles, improving maintainability, testability, and code organization.
 
-## 🏗️ Architecture Overview
+## Architecture Overview
 
-The app follows **Clean Architecture** principles, separating concerns into distinct layers with clear dependencies and boundaries.
-
-### Architecture Layers
+### 🏗️ **Clean Architecture Layers**
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Presentation Layer                       │
+│                        Presentation Layer                   │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
-│  │   ContentView   │  │ PlayerViewModel │  │ UI Views    │ │
+│  │   ContentView   │  │  GameViewModel  │  │ UI Views    │ │
 │  └─────────────────┘  └─────────────────┘  └─────────────┘ │
 └─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                      Domain Layer                           │
+│                       Business Logic Layer                  │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
-│  │     Entities    │  │   Use Cases     │  │Repository   │ │
-│  │                 │  │                 │  │ Protocols   │ │
+│  │ SceneController │  │ ShotFactory     │  │ MathUtils   │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────┘ │
+└─────────────────────────────────────────────────────────────┐
+│                        Data Layer                          │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
+│  │PlayerDataService│  │   Models        │  │ Resources   │ │
 │  └─────────────────┘  └─────────────────┘  └─────────────┘ │
 └─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                       Data Layer                            │
+│                     SceneKit Engine Layer                   │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
-│  │  Repositories   │  │  Data Sources   │  │    DTOs     │ │
-│  │                 │  │                 │  │             │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   Infrastructure Layer                      │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
-│  │   Extensions    │  │ SceneKit Engine │  │ DI Container│ │
+│  │  SceneBuilder   │  │ShotAnimationSvc │  │  Constants  │ │
 │  └─────────────────┘  └─────────────────┘  └─────────────┘ │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## 📁 Project Structure
+## 📁 **Directory Structure**
 
 ```
 NBATestApp/
-├── Architecture/
-│   ├── Domain/                    # Business Logic Layer
-│   │   ├── Entities/              # Core business objects
-│   │   │   ├── Player.swift
-│   │   │   ├── ShotSpec.swift
-│   │   │   └── Team.swift
-│   │   ├── UseCases/              # Business rules & operations
-│   │   │   ├── PlayerUseCase.swift
-│   │   │   └── ShotUseCase.swift
-│   │   └── Repositories/          # Data access contracts
-│   │       └── PlayerRepositoryProtocol.swift
-│   ├── Data/                      # Data Access Layer
-│   │   ├── Repositories/          # Repository implementations
-│   │   │   └── PlayerRepository.swift
-│   │   └── DataSources/           # Data source implementations
-│   │       ├── PlayerDataSourceProtocol.swift
-│   │       └── LocalPlayerDataSource.swift
-│   ├── Presentation/              # UI Layer
-│   │   ├── ViewModels/            # Presentation logic
-│   │   │   └── PlayerViewModel.swift
-│   │   └── Views/                 # SwiftUI views
-│   │       └── ContentView.swift
-│   ├── Infrastructure/            # Cross-cutting concerns
-│   │   └── Extensions/            # Utility extensions
-│   │       ├── Player+Mapping.swift
-│   │       └── PlayerDTO+Extensions.swift
-│   └── DI/                       # Dependency Injection
-│       └── DependencyContainer.swift
-├── Models/                        # Legacy models (to be removed)
-├── Services/                      # Legacy services (to be removed)
-├── UI/                           # Legacy UI (to be removed)
-└── SceneKitEngine/               # 3D rendering engine
+├── Models/                          # Data models and constants
+│   ├── Player.swift                 # Player data model
+│   ├── ShotSpec.swift               # Shot specification model
+│   └── GameConstants.swift          # Centralized game constants
+├── Services/                        # Business logic services
+│   ├── SceneController.swift        # Main scene orchestration
+│   ├── PlayerDataService.swift      # Player data management
+│   └── ShotFactory.swift            # Shot generation logic
+├── SceneKitEngine/                  # 3D rendering engine
+│   ├── SceneBuilder.swift           # Scene construction
+│   ├── ShotAnimationService.swift   # Shot animation logic
+│   └── MathUtils.swift              # Mathematical utilities
+├── UI/                             # User interface components
+│   ├── ContentView.swift            # Main view
+│   ├── GameViewModel.swift          # View model for game logic
+│   ├── ArenaSegmentedControl.swift  # Team selection control
+│   ├── PlaybackControls.swift       # Playback control buttons
+│   └── PlayerOverlayView.swift      # Player information overlay
+└── Resources/                       # Static assets
+    ├── crowd.jpg                    # Audience backdrop
+    └── Player JSON files            # Team player data
 ```
 
-## 🔄 Dependency Flow
+## 🔧 **Key Components**
 
-The dependency flow follows the **Dependency Inversion Principle**:
+### **Models Layer**
+- **`Player.swift`**: Player data structure with Codable support
+- **`ShotSpec.swift`**: Shot trajectory and result specification
+- **`GameConstants.swift`**: Centralized configuration values
 
-1. **Presentation Layer** depends on **Domain Layer** (Use Cases)
-2. **Domain Layer** depends on **Data Layer** (Repository Protocols)
-3. **Data Layer** implements **Domain Layer** contracts
-4. **Infrastructure Layer** provides cross-cutting utilities
+### **Services Layer**
+- **`SceneController.swift`**: Orchestrates scene and animation flow
+- **`PlayerDataService.swift`**: Handles player data loading and parsing
+- **`ShotFactory.swift`**: Generates realistic shot patterns
+
+### **SceneKit Engine Layer**
+- **`SceneBuilder.swift`**: Constructs 3D basketball court scene
+- **`ShotAnimationService.swift`**: Manages ball flight and effects
+- **`MathUtils.swift`**: Mathematical calculations for trajectories
+
+### **UI Layer**
+- **`ContentView.swift`**: Main SwiftUI view with scene integration
+- **`GameViewModel.swift`**: Business logic for UI state management
+- **`ArenaSegmentedControl.swift`**: Custom team selection control
+- **`PlaybackControls.swift`**: Playback control interface
+- **`PlayerOverlayView.swift`**: Player information display
+
+## 🚀 **Key Improvements**
+
+### **1. Separation of Concerns**
+- **SceneController**: Now focuses only on orchestration
+- **SceneBuilder**: Dedicated to scene construction
+- **ShotAnimationService**: Handles all animation logic
+- **GameViewModel**: Manages UI state and business logic
+
+### **2. Centralized Configuration**
+- **GameConstants**: All magic numbers and configuration values centralized
+- **Easy maintenance**: Change values in one place
+- **Consistent behavior**: All components use same constants
+
+### **3. Better Error Handling**
+- **PlayerDataService**: Robust error handling with custom error types
+- **Async/await support**: Modern Swift concurrency patterns
+- **Graceful fallbacks**: App continues working even with data errors
+
+### **4. Improved Testability**
+- **Dependency injection**: Services can be easily mocked
+- **Single responsibility**: Each class has one clear purpose
+- **Protocol-based design**: Easy to create test doubles
+
+### **5. Enhanced Maintainability**
+- **Clear file organization**: Logical grouping of related functionality
+- **Consistent naming**: Descriptive names following Swift conventions
+- **Documentation**: Comprehensive code comments and documentation
+
+## 🔄 **Data Flow**
 
 ```
-ContentView → PlayerViewModel → PlayerUseCase → PlayerRepositoryProtocol
-                                                      ↓
-                                              PlayerRepository → PlayerDataSourceProtocol
-                                                                      ↓
-                                                              LocalPlayerDataSource
+1. User selects team → GameViewModel.loadTeamAndPrepareShots()
+2. PlayerDataService loads player data from JSON
+3. ShotFactory generates shot specifications
+4. GameViewModel updates UI state
+5. ContentView observes changes and updates SceneController
+6. SceneController loads shots and manages playback
+7. ShotAnimationService animates individual shots
+8. SceneBuilder provides 3D scene infrastructure
 ```
 
-## 🚀 Key Benefits
+## 🎯 **Usage Examples**
 
-### 1. **Separation of Concerns**
-- Each layer has a single responsibility
-- Business logic is isolated from UI and data access
-- Easy to modify one layer without affecting others
-
-### 2. **Testability**
-- Use Cases can be tested independently
-- Repository protocols enable easy mocking
-- ViewModels can be tested with fake dependencies
-
-### 3. **Scalability**
-- Easy to add new features by extending existing layers
-- New data sources can be added without changing business logic
-- UI changes don't affect business rules
-
-### 4. **Maintainability**
-- Clear dependencies make code easier to understand
-- Consistent patterns across the codebase
-- Easy to locate and fix issues
-
-### 5. **Flexibility**
-- Easy to swap implementations (e.g., local data → API data)
-- New platforms can reuse business logic
-- Database changes don't affect UI
-
-## 🧪 Testing Strategy
-
-### Unit Tests
-- **Use Cases**: Test business logic with mocked repositories
-- **ViewModels**: Test with fake use cases
-- **Repositories**: Test with fake data sources
-
-### Integration Tests
-- Test complete data flow from data source to UI
-- Verify mapping between DTOs and domain entities
-
-### UI Tests
-- Test user interactions and state changes
-- Verify proper error handling and loading states
-
-## 🔧 Adding New Features
-
-### 1. **New Entity**
+### **Creating Custom Shot Configuration**
 ```swift
-// 1. Create domain entity in Architecture/Domain/Entities/
-struct Game: Identifiable, Equatable {
-    let id: String
-    let homeTeam: Team
-    let awayTeam: Team
-    let date: Date
-}
+let config = ShotFactory.ShotConfiguration(
+    rimPosition: SCNVector3(0, 3.05, -8),
+    maxPlayers: 8,
+    startXRange: -6.0...6.0,
+    startZRange: -3.0...1.0,
+    apexYRange: 4.5...7.0,
+    successRate: 0.7
+)
 
-// 2. Create repository protocol in Architecture/Domain/Repositories/
-protocol GameRepositoryProtocol {
-    func getGames() async throws -> [Game]
-}
-
-// 3. Create use case in Architecture/Domain/UseCases/
-protocol GameUseCaseProtocol {
-    func getUpcomingGames() async throws -> [Game]
-}
+let shots = ShotFactory.makeDemoShots(for: players, configuration: config)
 ```
 
-### 2. **New Data Source**
+### **Customizing Game Constants**
 ```swift
-// 1. Create data source protocol
-protocol GameDataSourceProtocol {
-    func fetchGames() async throws -> [GameDTO]
-}
-
-// 2. Implement concrete data source
-final class APIGameDataSource: GameDataSourceProtocol {
-    func fetchGames() async throws -> [GameDTO] {
-        // API implementation
-    }
+// In GameConstants.swift
+struct Animation {
+    static let shotDuration: TimeInterval = 2.0  // Slower shots
+    static let cleanupDelay: TimeInterval = 0.5  // Longer effects
 }
 ```
 
-### 3. **New UI Feature**
-```swift
-// 1. Create ViewModel
-@MainActor
-final class GameViewModel: ObservableObject {
-    @Published var games: [Game] = []
-    private let gameUseCase: GameUseCaseProtocol
-    
-    // Implementation
-}
+## 🧪 **Testing Strategy**
 
-// 2. Create SwiftUI View
-struct GameListView: View {
-    @StateObject private var viewModel: GameViewModel
-    
-    // UI implementation
-}
-```
+### **Unit Tests**
+- **Services**: Test business logic in isolation
+- **Models**: Validate data structures and transformations
+- **Utilities**: Test mathematical calculations
 
-## 📱 Current Features
+### **Integration Tests**
+- **SceneController**: Test scene orchestration flow
+- **AnimationService**: Test shot animation sequences
+- **DataFlow**: Test end-to-end data loading and display
 
-- **Team Selection**: Switch between Pacers and Nets
-- **Player Visualization**: 3D court with player representations
-- **Shot Animation**: Animated basketball shots with physics
-- **Error Handling**: Graceful error handling with retry options
-- **Loading States**: Proper loading indicators during data fetch
+### **UI Tests**
+- **User Interactions**: Test team selection and playback controls
+- **State Management**: Verify UI updates with data changes
+- **Accessibility**: Ensure app is accessible to all users
 
-## 🎯 Future Enhancements
+## 🔮 **Future Enhancements**
 
-- **API Integration**: Replace local JSON with live NBA API
-- **Caching**: Implement local caching for offline support
-- **Real-time Updates**: Live game data and statistics
-- **User Preferences**: Save user's favorite teams and players
-- **Analytics**: Track user interactions and app performance
+### **Planned Improvements**
+1. **Network Layer**: API integration for real-time data
+2. **Caching**: Local data persistence and offline support
+3. **Analytics**: Shot statistics and player performance metrics
+4. **Multiplayer**: Real-time collaborative viewing
+5. **Customization**: User-configurable court layouts and themes
 
-## 🛠️ Development Setup
+### **Architecture Extensions**
+1. **Repository Pattern**: Abstract data access layer
+2. **Coordinator Pattern**: Better navigation management
+3. **Reactive Programming**: Combine framework integration
+4. **Modular Design**: Feature-based module separation
 
-1. **Clone the repository**
-2. **Open `NBATestApp.xcodeproj`** in Xcode
-3. **Build and run** the project
-4. **Select a team** to see players and shots
-
-## 📚 Dependencies
+## 📚 **Dependencies**
 
 - **SwiftUI**: Modern declarative UI framework
-- **SceneKit**: 3D graphics and physics engine
-- **Foundation**: Core iOS functionality
-- **Combine**: Reactive programming (future enhancement)
+- **SceneKit**: 3D graphics and animation
+- **Foundation**: Core data structures and utilities
+- **simd**: Vector mathematics for 3D calculations
 
-## 🤝 Contributing
+## 🤝 **Contributing**
 
-When contributing to this project:
+1. Follow the established architecture patterns
+2. Use GameConstants for all configuration values
+3. Maintain separation of concerns
+4. Add comprehensive documentation
+5. Include unit tests for new functionality
 
-1. **Follow Clean Architecture principles**
-2. **Add tests for new features**
-3. **Update documentation**
-4. **Use the dependency container for new dependencies**
-5. **Follow Swift naming conventions**
+## 📋 **Development Planning**
 
-## 📄 License
+For detailed development planning, team structure, and work delegation, see [DEVELOPMENT_PLAN.md](./DEVELOPMENT_PLAN.md).
 
-This project is for educational and demonstration purposes.
+## 📄 **License**
+
+This project is part of the NBA Test App development effort.
