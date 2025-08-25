@@ -80,25 +80,89 @@ final class SceneBuilder {
     private static func setupCourtFloor(in scene: SCNScene) {
         let floorPlane = SCNPlane(width: CGFloat(GameConstants.Court.width), 
                                  height: CGFloat(GameConstants.Court.length))
-        floorPlane.firstMaterial?.diffuse.contents = UIColor.systemGreen.withAlphaComponent(0.85)
+        
+        // Create a proper basketball court material
+        let floorMaterial = SCNMaterial()
+        
+        // Try to load a court texture, fallback to a realistic court color
+        if let courtTexture = UIImage(named: "court_texture") {
+            floorMaterial.diffuse.contents = courtTexture
+            floorMaterial.diffuse.wrapS = .repeat
+            floorMaterial.diffuse.wrapT = .repeat
+        } else {
+            // Create a realistic basketball court color (wooden court)
+            floorMaterial.diffuse.contents = UIColor(red: 0.6, green: 0.4, blue: 0.2, alpha: 1.0)
+        }
+        
+        // Add some roughness and specular for realism
+        floorMaterial.roughness.contents = 0.8
+        floorMaterial.metalness.contents = 0.1
+        floorMaterial.lightingModel = .physicallyBased
+        
+        floorPlane.materials = [floorMaterial]
         floorPlane.firstMaterial?.isDoubleSided = true
         
         let floorNode = SCNNode(geometry: floorPlane)
         floorNode.eulerAngles.x = -.pi/2
         floorNode.position = SCNVector3(0, GameConstants.Court.floorY, GameConstants.Court.centerZ)
+        floorNode.name = "courtFloor"
         
         scene.rootNode.addChildNode(floorNode)
+        
+        // Add court lines on top of the floor
+        setupCourtLines(in: scene)
     }
     
     private static func setupCourtLines(in scene: SCNScene) {
-        let centerLine = SCNPlane(width: CGFloat(GameConstants.Court.width), height: 0.06)
-        centerLine.firstMaterial?.diffuse.contents = UIColor.white
+        // Center line
+        let centerLine = SCNPlane(width: CGFloat(GameConstants.Court.width), height: 0.08)
+        let centerMaterial = SCNMaterial()
+        centerMaterial.diffuse.contents = UIColor.white
+        centerMaterial.emission.contents = UIColor.white
+        centerMaterial.emission.intensity = 0.1
+        centerLine.materials = [centerMaterial]
         
         let centerNode = SCNNode(geometry: centerLine)
         centerNode.eulerAngles.x = -.pi/2
-        centerNode.position = SCNVector3(0, 0.01, GameConstants.Court.centerZ)
+        centerNode.position = SCNVector3(0, 0.02, GameConstants.Court.centerZ)
+        centerNode.name = "centerLine"
+        
+        // Free throw lines
+        let freeThrowDistance: Float = 4.57 // 15 feet from basket
+        let freeThrowWidth: Float = 3.66   // 12 feet wide
+        
+        // Left free throw line
+        let leftFreeThrow = SCNPlane(width: CGFloat(freeThrowWidth), height: 0.08)
+        leftFreeThrow.materials = [centerMaterial]
+        
+        let leftFreeThrowNode = SCNNode(geometry: leftFreeThrow)
+        leftFreeThrowNode.eulerAngles.x = -.pi/2
+        leftFreeThrowNode.position = SCNVector3(-freeThrowWidth/2, 0.02, GameConstants.Basket.position.z + freeThrowDistance)
+        leftFreeThrowNode.name = "leftFreeThrow"
+        
+        // Right free throw line
+        let rightFreeThrow = SCNPlane(width: CGFloat(freeThrowWidth), height: 0.08)
+        rightFreeThrow.materials = [centerMaterial]
+        
+        let rightFreeThrowNode = SCNNode(geometry: rightFreeThrow)
+        rightFreeThrowNode.eulerAngles.x = -.pi/2
+        rightFreeThrowNode.position = SCNVector3(freeThrowWidth/2, 0.02, GameConstants.Basket.position.z + freeThrowDistance)
+        rightFreeThrowNode.name = "rightFreeThrow"
+        
+        // Three-point line (simplified arc)
+        let threePointDistance: Float = 6.75 // 22.1 feet from basket
+        let threePointArc = SCNPlane(width: CGFloat(threePointDistance * 2), height: 0.08)
+        threePointArc.materials = [centerMaterial]
+        
+        let threePointNode = SCNNode(geometry: threePointArc)
+        threePointNode.eulerAngles.x = -.pi/2
+        threePointNode.position = SCNVector3(0, 0.02, GameConstants.Basket.position.z + threePointDistance)
+        threePointNode.name = "threePointLine"
         
         scene.rootNode.addChildNode(centerNode)
+        scene.rootNode.addChildNode(leftFreeThrowNode)
+        scene.rootNode.addChildNode(rightFreeThrowNode)
+        scene.rootNode.addChildNode(threePointNode)
     }
     
     private static func setupBasket(in scene: SCNScene) {
@@ -170,14 +234,33 @@ final class SceneBuilder {
     private static func setupAudience(in scene: SCNScene) {
         let crowdPlane = SCNPlane(width: CGFloat(GameConstants.Audience.backdropWidth), 
                                  height: CGFloat(GameConstants.Audience.backdropHeight))
-        crowdPlane.firstMaterial?.diffuse.contents = UIImage(named: "crowd.jpg")
-        crowdPlane.firstMaterial?.diffuse.wrapS = .repeat
-        crowdPlane.firstMaterial?.diffuse.wrapT = .repeat
-        crowdPlane.firstMaterial?.isDoubleSided = true
+        
+        let crowdMaterial = SCNMaterial()
+        
+        // Try to load the crowd image from the bundle
+        if let crowdImage = UIImage(named: "crowd.jpg") {
+            print("🎯 SceneBuilder: Successfully loaded crowd image")
+            crowdMaterial.diffuse.contents = crowdImage
+            crowdMaterial.diffuse.wrapS = .repeat
+            crowdMaterial.diffuse.wrapT = .repeat
+        } else {
+            print("🎯 SceneBuilder: Crowd image not found, using fallback color")
+            // Fallback to a realistic crowd color
+            crowdMaterial.diffuse.contents = UIColor(red: 0.2, green: 0.2, blue: 0.3, alpha: 0.8)
+        }
+        
+        // Add some emission for better visibility
+        crowdMaterial.emission.contents = UIColor(red: 0.1, green: 0.1, blue: 0.15, alpha: 0.3)
+        crowdMaterial.emission.intensity = 0.2
+        
+        crowdMaterial.isDoubleSided = true
+        crowdPlane.materials = [crowdMaterial]
         
         let crowdNode = SCNNode(geometry: crowdPlane)
         crowdNode.position = GameConstants.Audience.backdropPosition
+        crowdNode.name = "audience"
         
         scene.rootNode.addChildNode(crowdNode)
+        print("🎯 SceneBuilder: Audience backdrop added at position: \(GameConstants.Audience.backdropPosition)")
     }
 }

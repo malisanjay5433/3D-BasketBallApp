@@ -58,7 +58,7 @@ final class ShotAnimationService {
         ballGeometry.materials = [material]
         
         let ball = SCNNode(geometry: ballGeometry)
-        ball.name = "ball"
+        ball.name = "ball_\(Date().timeIntervalSince1970)"  // Unique name for cleanup
         ball.position = position
         
         // Add a point light to the ball to make it glow
@@ -97,7 +97,9 @@ final class ShotAnimationService {
         
         for i in 0..<breadcrumbCount {
             let breadcrumb = SCNNode(geometry: SCNSphere(radius: CGFloat(GameConstants.Ball.breadcrumbRadius)))
+            breadcrumb.name = "crumb_\(i)"  // Name each breadcrumb for cleanup
             breadcrumb.position = start
+            breadcrumb.isHidden = true  // Start hidden, will be revealed during animation
             
             // Create material with appropriate color and emission
             let material = SCNMaterial()
@@ -234,7 +236,7 @@ final class ShotAnimationService {
         ringGeometry.materials = [ringMaterial]
         
         let ringNode = SCNNode(geometry: ringGeometry)
-        ringNode.name = "effect"
+        ringNode.name = "effect_made_\(Date().timeIntervalSince1970)"  // More specific naming
         ringNode.position = SCNVector3(pos.x, pos.y - 0.08, pos.z)
         
         scene.rootNode.addChildNode(ringNode)
@@ -274,7 +276,7 @@ final class ShotAnimationService {
         barB.eulerAngles.z = -.pi/4
         
         let pivotNode = SCNNode()
-        pivotNode.name = "effect"
+        pivotNode.name = "effect_miss_\(Date().timeIntervalSince1970)"  // More specific naming
         pivotNode.position = pos
         
         pivotNode.addChildNode(barA)
