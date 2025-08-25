@@ -235,9 +235,9 @@ struct ShotFactory {
 		static let `default` = ShotConfiguration(
             rimPosition: SCNVector3(0, 3.05, -8),
             maxPlayers: 6,
-            startXRange: -5.0...5.0,
-            startZRange: -2.0...0.0,
-            apexYRange: 5.0...6.0,
+            startXRange: -6.0...6.0,  // Increased range for better visibility
+            startZRange: (-4.0)...(-1.0),  // Moved shots further back for better arc visibility
+            apexYRange: 6.0...8.0,     // Increased apex height for more dramatic arc
             successRate: 0.5
         )
     }

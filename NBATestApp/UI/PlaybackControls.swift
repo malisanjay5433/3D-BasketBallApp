@@ -29,9 +29,11 @@ struct PlaybackControls: View {
             Button(action: {
                 // If shots exist, just replay them. Otherwise load new shots
                 if !shots.isEmpty {
+                    print("🎯 Play button: Replaying existing \(shots.count) shots")
                     controller.stopAll()
                     controller.play(shots: shots, players: playersMap)
                 } else {
+                    print("🎯 Play button: No shots available, loading new shots")
                     // Load shots from JSON first
                     Task {
                         await gameViewModel.loadShotsForPlayback()

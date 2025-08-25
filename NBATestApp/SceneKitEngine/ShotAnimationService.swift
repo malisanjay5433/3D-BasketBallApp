@@ -17,10 +17,15 @@ final class ShotAnimationService {
         let start = SCNVector3(shot.start.x, shot.start.y, shot.start.z)
         let end = SCNVector3(shot.rim.x, shot.rim.y, shot.rim.z)
         print("🎯 Start position: \(start), End position: \(end)")
+        print("🎯 Apex Y: \(shot.apexY)")
         
         // Create and setup ball
         let ball = createBall(at: start)
+        
         scene.rootNode.addChildNode(ball)
+        print("🎯 Ball created at position: \(ball.position)")
+        print("🎯 Ball added to scene. Scene has \(scene.rootNode.childNodes.count) root nodes")
+        print("🎯 Ball node name: \(ball.name ?? "unnamed")")
         
         // Create breadcrumbs
         let breadcrumbs = createBreadcrumbs(for: shot, start: start, end: end)
@@ -40,12 +45,34 @@ final class ShotAnimationService {
     
     private func createBall(at position: SCNVector3) -> SCNNode {
         let ballGeometry = SCNSphere(radius: CGFloat(GameConstants.Ball.radius))
-        ballGeometry.firstMaterial?.diffuse.contents = UIColor.orange
-        ballGeometry.firstMaterial?.roughness.contents = 0.3
+        
+        // Create a proper basketball material with realistic orange color
+        let material = SCNMaterial()
+        material.diffuse.contents = UIColor(red: 1.0, green: 0.5, blue: 0.0, alpha: 1.0)  // Basketball orange
+        material.emission.contents = UIColor(red: 1.0, green: 0.5, blue: 0.0, alpha: 0.3)  // Subtle glow
+        material.emission.intensity = 0.4  // Moderate emission
+        material.roughness.contents = 0.2  // Slightly rough surface
+        material.metalness.contents = 0.1  // Low metalness for realistic look
+        material.lightingModel = .physicallyBased  // Use PBR for better rendering
+        
+        ballGeometry.materials = [material]
         
         let ball = SCNNode(geometry: ballGeometry)
         ball.name = "ball"
         ball.position = position
+        
+        // Add a point light to the ball to make it glow
+        let ballLight = SCNLight()
+        ballLight.type = .omni
+        ballLight.intensity = 50.0  // Reduced intensity
+        ballLight.color = UIColor(red: 1.0, green: 0.5, blue: 0.0, alpha: 1.0)  // Orange light
+        ballLight.attenuationStartDistance = 0.3
+        ballLight.attenuationEndDistance = 2.0
+        
+        let lightNode = SCNNode()
+        lightNode.light = ballLight
+        lightNode.position = SCNVector3(0, 0, 0)
+        ball.addChildNode(lightNode)
         
         // Add spinning animation
         let spinAction = SCNAction.repeatForever(
@@ -54,6 +81,8 @@ final class ShotAnimationService {
         )
         ball.runAction(spinAction, forKey: "spin")
         
+        print("🎯 Ball created with radius: \(GameConstants.Ball.radius)")
+        print("🎯 Ball has light: \(ball.childNodes.contains(where: { $0.light != nil }))")
         return ball
     }
     
@@ -61,13 +90,33 @@ final class ShotAnimationService {
         var breadcrumbs: [SCNNode] = []
         
         for _ in 0..<GameConstants.Ball.breadcrumbCount {
-            let crumbGeometry = SCNSphere(radius: CGFloat(GameConstants.Ball.breadcrumbRadius))
-            crumbGeometry.firstMaterial?.diffuse.contents = shot.made ? UIColor.systemGreen : UIColor.systemRed
-            crumbGeometry.firstMaterial?.emission.contents = crumbGeometry.firstMaterial?.diffuse.contents
+            // Create small cylinders instead of spheres for dashed line effect
+            let crumbGeometry = SCNCylinder(radius: CGFloat(GameConstants.Ball.breadcrumbRadius), 
+                                          height: CGFloat(GameConstants.Ball.breadcrumbRadius * 0.3))
+            
+            // Create different colored breadcrumbs based on shot result
+            let crumbMaterial = SCNMaterial()
+            if shot.made {
+                crumbMaterial.diffuse.contents = UIColor.systemGreen
+                crumbMaterial.emission.contents = UIColor.systemGreen
+                crumbMaterial.emission.intensity = 0.8  // Increased emission
+            } else {
+                crumbMaterial.diffuse.contents = UIColor.systemRed
+                crumbMaterial.emission.contents = UIColor.systemRed
+                crumbMaterial.emission.intensity = 0.8  // Increased emission
+            }
+            
+            // Make breadcrumbs more visible
+            crumbMaterial.lightingModel = .physicallyBased
+            crumbMaterial.roughness.contents = 0.1
+            crumbMaterial.metalness.contents = 0.9
+            
+            crumbGeometry.materials = [crumbMaterial]
             
             let breadcrumb = SCNNode(geometry: crumbGeometry)
             breadcrumb.name = "crumb"
             breadcrumb.isHidden = true
+            breadcrumb.opacity = 0.0  // Start invisible
             
             breadcrumbs.append(breadcrumb)
         }
@@ -83,21 +132,39 @@ final class ShotAnimationService {
                                  scene: SCNScene,
                                  completion: @escaping () -> Void) {
         
+        print("🎯 Starting ball flight animation")
+        print("🎯 Ball initial position: \(ball.position)")
+        
+        // Create a custom action that follows the Bézier curve trajectory
         let flightAction = SCNAction.customAction(duration: GameConstants.Animation.shotDuration) { node, elapsed in
             let t = Float(min(1.0, elapsed / CGFloat(GameConstants.Animation.shotDuration)))
+            
+            // Calculate position along the Bézier curve
             let position = MathUtils.bezierPoint(t: t, start: start, end: end, apexY: shot.apexY)
             node.position = position
             
-            // Reveal breadcrumbs along the path
+            // Update breadcrumbs along the path
             self.updateBreadcrumbs(breadcrumbs: breadcrumbs, 
                                  t: t, 
                                  start: start, 
                                  end: end, 
                                  apexY: shot.apexY)
+            
+            // Debug: Print position every few frames
+            if Int(elapsed * 10) % 10 == 0 {
+                print("🎯 Ball at t=\(t): \(node.position)")
+            }
         }
+        
+        // Add rotation for realism
+        let spinAction = SCNAction.rotateBy(x: 0, y: CGFloat.pi * 2, z: 0, duration: GameConstants.Animation.shotDuration)
+        
+        // Group the actions
+        let groupAction = SCNAction.group([flightAction, spinAction])
         
         // Show made/miss effect
         let effectAction = SCNAction.run { _ in
+            print("🎯 Shot completed, showing effect")
             if shot.made {
                 self.addMadeRing(at: end, in: scene)
             } else {
@@ -107,19 +174,31 @@ final class ShotAnimationService {
         
         // Cleanup
         let cleanupAction = SCNAction.run { _ in
+            print("🎯 Cleaning up animation nodes")
             ball.removeFromParentNode()
             breadcrumbs.forEach { $0.removeFromParentNode() }
             completion()
         }
         
+        // Sequence: flight + effect + cleanup
         let sequence = SCNAction.sequence([
-            flightAction,
+            groupAction,
             effectAction,
             SCNAction.wait(duration: GameConstants.Animation.cleanupDelay),
             cleanupAction
         ])
         
+        print("🎯 Running ball animation sequence")
         ball.runAction(sequence)
+    }
+    
+    // Easing function for more realistic movement
+    private func easeInOutQuad(t: Float) -> Float {
+        if t < 0.5 {
+            return 2 * t * t
+        } else {
+            return 1 - 2 * (1 - t) * (1 - t)
+        }
     }
     
     private func updateBreadcrumbs(breadcrumbs: [SCNNode],
@@ -132,8 +211,22 @@ final class ShotAnimationService {
             
             if t >= revealThreshold {
                 let position = MathUtils.bezierPoint(t: revealThreshold, start: start, end: end, apexY: apexY)
-                breadcrumb.position = SCNVector3(position.x, position.y + GameConstants.Ball.breadcrumbOffset, position.z)
+                
+                // Ensure breadcrumbs are above the court surface (y > 0.1) and add extra offset
+                let yPosition = max(position.y + GameConstants.Ball.breadcrumbOffset, 0.15)
+                breadcrumb.position = SCNVector3(position.x, yPosition, position.z)
                 breadcrumb.isHidden = false
+                
+                // Add fade-in effect for breadcrumbs
+                let fadeInAction = SCNAction.fadeIn(duration: 0.1)
+                breadcrumb.runAction(fadeInAction)
+                
+                // Make breadcrumbs pulse for better visibility
+                let pulseAction = SCNAction.sequence([
+                    SCNAction.scale(to: 1.2, duration: 0.3),
+                    SCNAction.scale(to: 1.0, duration: 0.3)
+                ])
+                breadcrumb.runAction(SCNAction.repeatForever(pulseAction), forKey: "pulse")
             }
         }
     }
@@ -141,8 +234,11 @@ final class ShotAnimationService {
     private func addMadeRing(at pos: SCNVector3, in scene: SCNScene) {
         let ringGeometry = SCNTorus(ringRadius: CGFloat(GameConstants.Effects.madeRingRadius), 
                                    pipeRadius: CGFloat(GameConstants.Effects.madeRingPipeRadius))
-        ringGeometry.firstMaterial?.diffuse.contents = UIColor.systemGreen
-        ringGeometry.firstMaterial?.emission.contents = UIColor.systemGreen
+        let ringMaterial = SCNMaterial()
+        ringMaterial.diffuse.contents = UIColor.systemGreen
+        ringMaterial.emission.contents = UIColor.systemGreen
+        ringMaterial.emission.intensity = 1.0  // Bright emission
+        ringGeometry.materials = [ringMaterial]
         
         let ringNode = SCNNode(geometry: ringGeometry)
         ringNode.name = "effect"
@@ -150,15 +246,21 @@ final class ShotAnimationService {
         
         scene.rootNode.addChildNode(ringNode)
         
+        // More dramatic animation
         let scaleAction = SCNAction.scale(to: CGFloat(GameConstants.Effects.madeRingScale), 
                                         duration: GameConstants.Animation.effectScaleDuration)
         let fadeAction = SCNAction.fadeOut(duration: GameConstants.Animation.effectFadeDuration)
         let removeAction = SCNAction.removeFromParentNode()
         
+        // Add rotation for more visual impact
+        let rotateAction = SCNAction.rotateBy(x: 0, y: .pi * 2, z: 0, duration: GameConstants.Animation.effectScaleDuration)
+        
         ringNode.runAction(SCNAction.sequence([
-            SCNAction.group([scaleAction, fadeAction]),
+            SCNAction.group([scaleAction, fadeAction, rotateAction]),
             removeAction
         ]))
+        
+        print("🎯 Made shot effect added at position: \(pos)")
     }
     
     private func addMissX(at pos: SCNVector3, in scene: SCNScene) {
@@ -166,8 +268,11 @@ final class ShotAnimationService {
                                 height: CGFloat(GameConstants.Effects.missBarHeight), 
                                 length: CGFloat(GameConstants.Effects.missBarDepth), 
                                 chamferRadius: CGFloat(GameConstants.Effects.missBarChamferRadius))
-        barGeometry.firstMaterial?.diffuse.contents = UIColor.systemRed
-        barGeometry.firstMaterial?.emission.contents = UIColor.systemRed
+        let barMaterial = SCNMaterial()
+        barMaterial.diffuse.contents = UIColor.systemRed
+        barMaterial.emission.contents = UIColor.systemRed
+        barMaterial.emission.intensity = 1.0  // Bright emission
+        barGeometry.materials = [barMaterial]
         
         let barA = SCNNode(geometry: barGeometry)
         barA.eulerAngles.z = .pi/4
@@ -178,19 +283,29 @@ final class ShotAnimationService {
         let pivotNode = SCNNode()
         pivotNode.name = "effect"
         pivotNode.position = pos
+        
         pivotNode.addChildNode(barA)
         pivotNode.addChildNode(barB)
         
         scene.rootNode.addChildNode(pivotNode)
         
+        // More dramatic animation
         let scaleAction = SCNAction.scale(to: CGFloat(GameConstants.Effects.missBarScale), 
                                         duration: GameConstants.Animation.effectScaleDuration)
         let fadeAction = SCNAction.fadeOut(duration: GameConstants.Animation.effectFadeDuration)
         let removeAction = SCNAction.removeFromParentNode()
         
+        // Add bounce effect
+        let bounceAction = SCNAction.sequence([
+            SCNAction.moveBy(x: 0, y: 0.5, z: 0, duration: GameConstants.Animation.effectScaleDuration * 0.3),
+            SCNAction.moveBy(x: 0, y: -0.5, z: 0, duration: GameConstants.Animation.effectScaleDuration * 0.7)
+        ])
+        
         pivotNode.runAction(SCNAction.sequence([
-            SCNAction.group([scaleAction, fadeAction]),
+            SCNAction.group([scaleAction, fadeAction, bounceAction]),
             removeAction
         ]))
+        
+        print("🎯 Miss shot effect added at position: \(pos)")
     }
 }

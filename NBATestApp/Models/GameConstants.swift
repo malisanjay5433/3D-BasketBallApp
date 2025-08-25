@@ -62,7 +62,7 @@ enum GameConstants {
     
     // MARK: - Animation
     struct Animation {
-        static let shotDuration: TimeInterval = 1.8
+        static let shotDuration: TimeInterval = 3.0  // Increased from 1.8 to 3.0 for better visibility
         static let cleanupDelay: TimeInterval = 0.3
         static let replayDelay: TimeInterval = 0.5
         static let ballSpinDuration: TimeInterval = 0.7
@@ -73,10 +73,10 @@ enum GameConstants {
     
     // MARK: - Ball Properties
     struct Ball {
-        static let radius: Float = 0.24
-        static let breadcrumbRadius: Float = 0.03
+        static let radius: Float = 0.18  // Increased from 0.12 for better visibility
+        static let breadcrumbRadius: Float = 0.04  // Decreased from 0.08 for smaller trajectory dots
         static let breadcrumbCount = 24
-        static let breadcrumbOffset: Float = 0.02
+        static let breadcrumbOffset: Float = 0.08  // Keep offset for visibility
     }
     
     // MARK: - Effects

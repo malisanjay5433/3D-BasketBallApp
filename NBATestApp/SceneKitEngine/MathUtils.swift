@@ -22,8 +22,13 @@ enum MathUtils {
         let midX = (start.x + end.x) * 0.5
         let midZ = (start.z + end.z) * 0.5
         
-        // Control point should be above the midpoint between start and end
-        let controlPoint = SCNVector3(midX, apexY, midZ)
+        // Create a more realistic basketball arc
+        // The control point should be above the midpoint and slightly forward
+        let distance = sqrt((end.x - start.x) * (end.x - start.x) + (end.z - start.z) * (end.z - start.z))
+        let arcHeight = max(apexY, start.y + 4.0)  // Ensure minimum arc height
+        
+        // Position control point to create a natural basketball arc
+        let controlPoint = SCNVector3(midX, arcHeight, midZ + distance * 0.1)
         
         // Quadratic Bézier curve calculation
         let u = 1 - t

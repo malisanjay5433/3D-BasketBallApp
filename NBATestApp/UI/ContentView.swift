@@ -17,7 +17,7 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             // 3D Scene
-            SceneView(scene: gameViewModel.getScene(),
+            SceneView(scene: sceneController.scene,
                      pointOfView: nil,
                      options: [.allowsCameraControl, .autoenablesDefaultLighting])
             .ignoresSafeArea()
@@ -35,24 +35,37 @@ struct ContentView: View {
                     
                     Spacer()
                     
-                    // Simple Test Shot Button
+                    // Debug Test Button
                     Button(action: {
-                        // Create a test shot
+                        print("🎯 Debug test button pressed")
+                        // Create a simple test shot
                         let testShot = ShotSpec(
-                            playerUID: "test",
-                            playerName: "Test Player",
-                            start: SCNVector3(5, 1, -2),
+                            playerUID: "debug",
+                            playerName: "Debug Player",
+                            start: SCNVector3(2, 1, -3),
                             rim: SCNVector3(0, 3.05, -8),
                             made: true,
-                            apexY: 6.0
+                            apexY: 5.0
                         )
-                        gameViewModel.shots.append(testShot)
+                        
+                        // Immediately animate this test shot
+                        sceneController.stopAll()
+                        sceneController.play(shots: [testShot], players: ["debug": Player(
+                            uid: "debug",
+                            playerId: nil,
+                            teamName: nil,
+                            teamAbbreviation: nil,
+                            jerseyNumber: nil,
+                            personName: PersonName(name: "Debug", firstName: nil, lastName: nil),
+                            images: nil
+                        )])
+                        print("🎯 Debug test shot started")
                     }) {
-                        Image(systemName: "basketball.fill")
-                            .font(.title2)
+                        Text("Test Ball")
+                            .font(.caption)
                             .foregroundColor(.white)
                             .padding(8)
-                            .background(Color.orange.opacity(0.8), in: Circle())
+                            .background(Color.red.opacity(0.8), in: RoundedRectangle(cornerRadius: 8))
                     }
                 }
                 .padding()
@@ -88,14 +101,35 @@ struct ContentView: View {
                 alignment: .bottom
             )
         }
+        .onAppear {
+            print("🎯 ContentView appeared, automatically loading shots")
+            // Automatically load shots when view appears
+            Task {
+                print("🎯 Starting automatic shot loading...")
+                await gameViewModel.loadTeamAndPrepareShots()
+                print("🎯 Automatic shot loading completed")
+            }
+        }
         .onChange(of: gameViewModel.shots) { _, newShots in
             print("🎯 ContentView: Shots changed to \(newShots.count) shots")
+            print("🎯 Shot details: \(newShots.map { "\($0.playerName) at \($0.start)" })")
+            
+            // Stop any existing animations
             sceneController.stopAll()
+            
+            // Load shots into the scene controller
             sceneController.loadShots(newShots)
-            // Auto-play shots when they're loaded
+            
+            // Auto-play shots when they're loaded (with a small delay to ensure loading is complete)
             if !newShots.isEmpty {
                 print("🎯 ContentView: Auto-playing \(newShots.count) shots")
-                sceneController.play(shots: newShots, players: gameViewModel.playersMap)
+                // Start animation immediately after shots are loaded
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    print("🎯 Starting automatic animation sequence")
+                    sceneController.play(shots: newShots, players: gameViewModel.playersMap)
+                }
+            } else {
+                print("🎯 ContentView: No shots to animate")
             }
         }
     }

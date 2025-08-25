@@ -33,12 +33,16 @@ final class PlayerDataService {
     /// - Returns: Array of Player objects
     /// - Throws: PlayerDataError if loading or decoding fails
     func loadPlayers(from fileName: String) -> [Player] {
+        print("🎯 PlayerDataService: Loading players from \(fileName)")
         do {
             let data = try loadDataFromBundle(fileName: fileName)
+            print("🎯 PlayerDataService: Successfully loaded \(data.count) bytes from \(fileName)")
+            
             let response = try decodePlayerResponse(from: data)
+            print("🎯 PlayerDataService: Successfully decoded \(response.data.players.count) players")
             return response.data.players
         } catch {
-            print("❌ Failed to load players from \(fileName): \(error)")
+            print("❌ PlayerDataService: Failed to load players from \(fileName): \(error)")
             return []
         }
     }
